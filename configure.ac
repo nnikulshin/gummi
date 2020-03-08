@@ -21,6 +21,7 @@ AC_PROG_CC
 AC_PROG_CC_C_O
 IT_PROG_INTLTOOL
 AM_PROG_CC_C_O
+AM_PROG_VALAC
 
 # Checks for libraries.
 AM_PATH_GLIB_2_0([2.20.0], [
@@ -58,6 +59,11 @@ PKG_CHECK_MODULES(synctex, [synctex >= 1.16],,
 	[AC_MSG_ERROR([You need synctex to build $PACKAGE])])
 GUI_CFLAGS="$GUI_CFLAGS $synctex_CFLAGS"
 GUI_LIBS="$GUI_LIBS $synctex_LIBS"
+
+PKG_CHECK_MODULES(gee, [gee-0.8 >= 0.10],,
+	[AC_MSG_ERROR([You need gee to build $PACKAGE])])
+GUI_CFLAGS="$GUI_CFLAGS $gee_CFLAGS"
+GUI_LIBS="$GUI_LIBS $gee_LIBS"
 
 # Set USE_SYNCTEX1 for synctex (< 2.00) compatibility
 if $PKG_CONFIG --max-version 1.99 synctex; then

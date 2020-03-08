@@ -7,10 +7,13 @@ AM_CFLAGS = $(GUI_CFLAGS) \
 	    -DGUMMI_DATA=\"$(datadir)/$(PACKAGE)\" \
 	    -DGUMMI_LOCALES=\"$(datadir)/locale\"
 
+AM_VALAFLAGS = -H completion.h --pkg gee-0.8 --pkg gtk+-3.0 --pkg gtksourceview-3.0
+
 gummi_LDADD = $(GUI_LIBS) \
 	      $(LIBINTL) -lgthread-2.0
 
-gummi_SOURCES = biblio.c  biblio.h \
+gummi_SOURCES = completion.vala \
+		biblio.c  biblio.h \
 		configfile.c configfile.h \
 		editor.c editor.h \
 		environment.c environment.h \
