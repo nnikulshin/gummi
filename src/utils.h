@@ -185,4 +185,9 @@ slist* slist_find (slist* head, const gchar* term, gboolean n, gboolean create);
 slist* slist_append (slist* head, slist* node);
 slist* slist_remove (slist* head, slist* node);
 
+void scan_for_labels (gchar* content);
+void scan_for_bibitems (gchar* content);
+void scan_for_new_envs (gchar* content, gchar* package);
+void scan_for_new_cmds (gchar* content, gchar* package);
+
 #endif /* __GUMMI_UTILS__ */

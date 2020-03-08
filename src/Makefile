@@ -9,8 +9,14 @@ OBJS = main.o gui/gui-main.o gui/gui-prefs.o gui/gui-menu.o gui/gui-search.o gui
 
 CFLAGS=-g -Wall  -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED -DGSEAL_ENABLE -export-dynamic -I. `pkg-config --cflags --libs gtk+-3.0 gthread-2.0 gtksourceview-3.0 cairo poppler-glib gtkspell3-3.0 synctex zlib` -lm -DUSE_SYNCTEX1 -DGUMMI_LOCALES="\"/usr/share/locale\"" -DGUMMI_DATA="\"$$PWD/../data\"" -DGUMMI_LIBS="\"$$PWD/../lib\""
 
-gummi: $(OBJS)
-	$(CC) -o $(TARGET) $(OBJS) $(CFLAGS)
+VALAFLAGS=-g -X -O0 -X -DGUMMI_DATA="\"$$PWD/../data\"" --pkg gee-0.8 --pkg gtk+-3.0 --pkg gtksourceview-3.0
+
+gummi: completion $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) completion.o $(CFLAGS)
+
+completion:
+	valac completion.vala -H completion.h -c $(VALAFLAGS)
+	@mv completion.vala.o completion.o
 
 clean:
 	rm -f $(TARGET) $(OBJS)

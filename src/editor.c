@@ -78,6 +78,8 @@ GuEditor* editor_new (GuMotion* mc) {
     ec->buffer = gtk_source_buffer_new_with_language (lang);
     ec->view = GTK_SOURCE_VIEW (gtk_source_view_new_with_buffer (ec->buffer));
     ec->stylemanager = gtk_source_style_scheme_manager_get_default ();
+    ec->autocomplete = gtk_source_view_get_completion (ec->view);
+    ec->comp_provider = gu_completion_get_default();
     ec->errortag = gtk_text_tag_new ("error");
     ec->searchtag = gtk_text_tag_new ("search");
     ec->editortags = gtk_text_buffer_get_tag_table (ec_buffer);
@@ -91,6 +93,7 @@ GuEditor* editor_new (GuMotion* mc) {
     gtk_style_context_add_provider(context,
                                    GTK_STYLE_PROVIDER(ec->css),
                                    GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    gtk_source_completion_add_provider(ec->autocomplete, ec->comp_provider, NULL);
 
     gtk_source_view_set_tab_width
         (ec->view, config_get_integer ("Editor", "tabwidth"));

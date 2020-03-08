@@ -101,6 +101,7 @@ void iofunctions_real_load_file (GObject* hook, const gchar* filename) {
     GError* err = NULL;
     gchar* text = NULL;
     gchar* decoded = NULL;
+    gchar* dirname = NULL;
     gboolean result;
     GuEditor* ec = NULL;
 
@@ -118,6 +119,16 @@ void iofunctions_real_load_file (GObject* hook, const gchar* filename) {
 
     editor_fill_buffer (ec, decoded);
     gtk_text_buffer_set_modified (GTK_TEXT_BUFFER(ec->buffer), FALSE);
+    
+    // Check for custom packages in file directory
+    dirname = g_path_get_dirname (filename);
+    scan_directory (dirname);
+    g_free (dirname);
+    // Scan the current file for bibitems, newenvironments and newcommands
+    scan_for_labels (decoded);
+    scan_for_bibitems (decoded);
+    scan_for_new_envs (decoded, NULL);
+    scan_for_new_cmds (decoded, NULL);
 
 cleanup:
     g_free (decoded);
@@ -166,6 +177,12 @@ void iofunctions_real_save_file (GObject* hook, GObject* savecontext) {
         slog (L_G_ERROR, _("%s\nPlease try again later."), err->message);
         g_error_free (err);
     }
+    
+    // Update completion information for bibitems, newenvironments and newcommands
+    scan_for_labels (text);
+    scan_for_bibitems (text);
+    scan_for_new_envs (text, NULL);
+    scan_for_new_cmds (text, NULL);
 
     g_free (encoded);
     g_free (text);
@@ -289,4 +306,42 @@ gboolean iofunctions_autosave_cb (void *user) {
        }
     }
     return TRUE;
+}
+
+void scan_directory (const gchar* dirname) {
+    GFile* directory = g_file_new_for_path (dirname);
+    GFileEnumerator* enumerator = g_file_enumerate_children (directory, "standard::*", G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS, NULL, NULL);
+    GFileInfo* info;
+    
+    while ((info = g_file_enumerator_next_file (enumerator, NULL, NULL)) != NULL) {
+        GFile* child = g_file_enumerator_get_child (enumerator, info);
+        gchar* path = g_file_get_path (child);
+        gchar* name = g_file_get_basename (child);
+        if (g_str_has_suffix (name, ".sty")) {
+            gchar* text;
+            gchar* decoded;
+            gchar* package = (gchar*)g_malloc ((strlen(name) - 3)*sizeof(gchar));
+            
+            if (!g_file_get_contents (path, &text, NULL, NULL)) continue;
+            if (NULL == (decoded = iofunctions_decode_text (text))) {
+                g_free (text);
+                continue;
+            }
+            
+            g_strlcpy (package, name, strlen(name) - 3);
+            scan_for_new_envs (decoded, package);
+            scan_for_new_cmds (decoded, package);
+            
+            g_free (text);
+            g_free (decoded);
+            g_free (package);
+        }
+        g_object_unref (child);
+        g_free (path);
+        g_free (name);
+        g_object_unref (info);
+    }
+    
+    g_object_unref (directory);
+    g_object_unref (enumerator);
 }

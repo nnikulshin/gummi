@@ -49,6 +49,7 @@
 #   define WEXITSTATUS(stat_val) ((unsigned int) (stat_val) >> 8)
 #endif
 
+#include "completion.h"
 #include "constants.h"
 #include "environment.h"
 #include "utils.h"
@@ -401,4 +402,87 @@ slist* slist_remove (slist* head, slist* node) {
             prev->next = current->next;
     }
     return head;
+}
+
+void scan_for_labels (gchar* content) {
+    GRegex* regex = NULL;
+    GMatchInfo* match_info;
+    
+    regex = g_regex_new ("\\\\label{\\s*([^{}\\s]*)\\s*}",
+        G_REGEX_MULTILINE, 0, NULL);
+    g_regex_match (regex, content, 0, &match_info);
+    while (g_match_info_matches (match_info)) {
+        gchar** result = g_match_info_fetch_all (match_info);
+        if (result[1]) gu_completion_add_ref_choice (gu_completion_get_default (), result[1]);
+        g_match_info_next (match_info, NULL);
+        g_strfreev (result);
+    }
+    
+    g_match_info_free (match_info);
+    g_regex_unref (regex);
+}
+
+void scan_for_bibitems (gchar* content) {
+    GRegex* regex = NULL;
+    GMatchInfo* match_info;
+    
+    regex = g_regex_new ("\\\\bibitem{\\s*([^{}\\s]*)\\s*}",
+        G_REGEX_MULTILINE, 0, NULL);
+    g_regex_match (regex, content, 0, &match_info);
+    while (g_match_info_matches (match_info)) {
+        gchar** result = g_match_info_fetch_all (match_info);
+        if (result[1]) gu_completion_add_citation_choice (gu_completion_get_default (), result[1]);
+        g_match_info_next (match_info, NULL);
+        g_strfreev (result);
+    }
+    
+    g_match_info_free (match_info);
+    g_regex_unref (regex);
+}
+
+void scan_for_new_envs (gchar* content, gchar* package) {
+    GRegex* regex = NULL;
+    GMatchInfo* match_info;
+    
+    regex = g_regex_new ("\\\\newenvironment\\*?{\\s*([^{}\\s]*)\\s*}",
+        G_REGEX_MULTILINE, 0, NULL);
+    g_regex_match (regex, content, 0, &match_info);
+    while (g_match_info_matches (match_info)) {
+        gchar** result = g_match_info_fetch_all (match_info);
+        if (result[1]) gu_completion_add_environment (gu_completion_get_default (), result[1], package);
+        g_match_info_next (match_info, NULL);
+        g_strfreev (result);
+    }
+    
+    g_match_info_free (match_info);
+    g_regex_unref (regex);
+}
+
+void scan_for_new_cmds (gchar* content, gchar* package) {
+    GRegex* regex = NULL;
+    GMatchInfo* match_info;
+    
+    regex = g_regex_new ("\\\\(?:re)?newcommand\\*?{\\s*([^{}\\[\\]\\s]*)\\s*}\\s*(?:\\[\\s*(\\d)\\s*\\])?\\s*(?:\\[\\s*([^{}\\[\\]\\s]*)\\s*\\])?",
+        G_REGEX_MULTILINE, 0, NULL);
+    g_regex_match (regex, content, 0, &match_info);
+    while (g_match_info_matches (match_info)) {
+        gchar** result = g_match_info_fetch_all (match_info);
+        gint n_arg = 0;
+        gchar** arg_names = NULL;
+        gint i;
+        if (!result[1]) continue;
+        if (result[2]) n_arg = atoi (result[2]);
+        if (n_arg != 0) {
+            arg_names = g_malloc ((n_arg+1)*sizeof(gchar*));
+            for (i = 0; i < n_arg; i++) arg_names[i] = g_strdup_printf ("arg%i", i);
+            arg_names[n_arg] = NULL;
+        }
+        gu_completion_add_command (gu_completion_get_default (), result[1], arg_names, n_arg, result[2] != NULL && result[3] != NULL, package);
+        g_match_info_next (match_info, NULL);
+        g_strfreev (result);
+        g_strfreev (arg_names);
+    }
+    
+    g_match_info_free (match_info);
+    g_regex_unref (regex);
 }

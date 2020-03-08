@@ -32,6 +32,7 @@
 #define __GUMMI_EDITOR_H__
 
 #include "motion.h"
+#include "completion.h"
 
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -59,6 +60,8 @@ struct _GuEditor {
     GtkSourceView* view;
     GtkSourceBuffer* buffer;
     GtkSourceStyleSchemeManager* stylemanager;
+    GtkSourceCompletion* autocomplete;
+    GuCompletion* comp_provider;
     GtkTextTag* errortag;
     GtkTextTag* searchtag;
     GtkTextTagTable* editortags;

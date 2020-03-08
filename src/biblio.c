@@ -33,6 +33,7 @@
 
 #include "biblio.h"
 #include "constants.h"
+#include "completion.h"
 #include "environment.h"
 #include "latex.h"
 #include "utils.h"
@@ -183,6 +184,7 @@ int biblio_parse_entries (GuBiblio* bc, gchar *bib_content) {
                                                     1, title_out,
                                                     2, author_out,
                                                     3, year_res[1], -1);
+        gu_completion_add_citation_choice (gu_completion_get_default (), ident_res[1]);
         g_free (author_out);
         g_free (title_out);
         g_strfreev (ident_res);

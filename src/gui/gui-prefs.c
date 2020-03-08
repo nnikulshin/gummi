@@ -90,10 +90,14 @@ GuPrefsGui* prefsgui_init (GtkWindow* mainwindow) {
         GTK_CHECK_BUTTON (gtk_builder_get_object (builder, "autoindentation"));
     p->autosaving =
         GTK_CHECK_BUTTON (gtk_builder_get_object (builder, "autosaving"));
+    p->interactive_completion =
+        GTK_CHECK_BUTTON (gtk_builder_get_object (builder, "interactive_completion"));
     p->compile_status =
         GTK_CHECK_BUTTON (gtk_builder_get_object (builder, "compile_status"));
     p->autosave_timer =
         GTK_SPIN_BUTTON (gtk_builder_get_object (builder, "autosave_timer"));
+    p->minchar =
+        GTK_SPIN_BUTTON (gtk_builder_get_object (builder, "minchar"));
     p->combo_languages =
         GTK_COMBO_BOX_TEXT (gtk_builder_get_object (builder, "combo_languages"));
     p->styleschemes_treeview =
@@ -241,6 +245,10 @@ static void set_tab_editor_settings (GuPrefsGui* prefs) {
                                config_get_integer ("File", "autosave_timer"));
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (prefs->autosaving),
                                   config_get_boolean ("File", "autosaving"));
+    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (prefs->interactive_completion),
+                                  config_get_boolean ("Editor", "interactive_completion"));
+    gtk_spin_button_set_value (prefs->minchar,
+                               config_get_integer ("Editor", "minchar"));
     if (!config_get_boolean ("File", "autosaving"))
         gtk_widget_set_sensitive (GTK_WIDGET (prefs->autosave_timer), FALSE);
 }
@@ -579,6 +587,12 @@ void toggle_autosaving (GtkWidget* widget, void* user) {
 }
 
 G_MODULE_EXPORT
+void toggle_interactive (GtkWidget* widget, void* user) {
+    gboolean newval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget));
+    config_set_boolean ("Editor", "interactive_completion", newval);
+}
+
+G_MODULE_EXPORT
 void toggle_autoexport (GtkWidget* widget, void* user) {
     gboolean newval = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget));
     config_set_boolean ("File", "autoexport", newval);
@@ -635,6 +649,12 @@ void on_autosave_value_changed (GtkWidget* widget, void* user) {
     config_set_integer("File", "autosave_timer", newval);
 
     iofunctions_reset_autosave (g_active_editor->filename);
+}
+
+G_MODULE_EXPORT
+void on_minchar_value_changed (GtkWidget* widget, void* user) {
+    gint newval = gtk_spin_button_get_value (GTK_SPIN_BUTTON (widget));
+    config_set_integer("Editor", "minchar", newval);
 }
 
 G_MODULE_EXPORT
