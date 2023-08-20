@@ -153,9 +153,9 @@ GuPrefsGui* prefsgui_init (GtkWindow* mainwindow) {
 
     // list available languages
     if (g_file_test (
-        g_find_program_in_path("enchant-lsmod"), G_FILE_TEST_EXISTS)) {
+        g_find_program_in_path("enchant-lsmod-2"), G_FILE_TEST_EXISTS)) {
 
-        Tuple2 pret = utils_popen_r ("enchant-lsmod -list-dicts", NULL);
+        Tuple2 pret = utils_popen_r ("enchant-lsmod-2 -list-dicts", NULL);
         if (pret.second != NULL) {
             gchar** output = g_strsplit((gchar*)pret.second, "\n", BUFSIZ);
             gchar** elems = NULL;
@@ -255,8 +255,16 @@ static void set_tab_editor_settings (GuPrefsGui* prefs) {
 
 static void set_tab_fontcolor_settings (GuPrefsGui* prefs) {
     gtk_font_chooser_set_font (GTK_FONT_CHOOSER (prefs->editor_font),
-                               config_get_string ("Editor", "font"));
+                               config_get_string ("Editor", "font_str"));
     prefsgui_apply_style_scheme(prefs);
+
+    // set default font on all tabs
+    GList* tab = gummi->tabmanager->tabs;
+    while (tab) {
+        editor_set_font (GU_TAB_CONTEXT (tab->data)->editor,
+                         config_get_string ("Editor", "font_css"));
+        tab = g_list_next (tab);
+    }
 }
 
 static void set_tab_defaulttext_settings (GuPrefsGui* prefs) {
@@ -674,15 +682,24 @@ void on_cache_size_value_changed (GtkWidget* widget, void* user) {
 }
 
 G_MODULE_EXPORT
-void on_editor_font_set (GtkWidget* widget, void* user) {
-    gchar* font = gtk_font_chooser_get_font ( GTK_FONT_CHOOSER (widget));
+void on_editor_font_change (GtkWidget* widget, void* user) {
+    PangoFontDescription* font_desc;
+    gchar* font_css;
+    gchar* font_str;
+
+    font_str = gtk_font_chooser_get_font ( GTK_FONT_CHOOSER (widget));
+    config_set_string ("Editor", "font_str", font_str);
+    slog (L_INFO, "setting font to %s\n", font_str);
+    g_free (font_str);
+
+    font_desc = gtk_font_chooser_get_font_desc (GTK_FONT_CHOOSER (widget));
+    font_css  = utils_pango_font_desc_to_css (font_desc);
+    config_set_string ("Editor", "font_css", font_css);
+
+    // set new font on all tabs
     GList* tab = gummi->tabmanager->tabs;
-
-    slog (L_INFO, "setting font to %s\n", font);
-    config_set_string ("Editor", "font", font);
-
     while (tab) {
-        editor_set_font (GU_TAB_CONTEXT (tab->data)->editor, font);
+        editor_set_font (GU_TAB_CONTEXT (tab->data)->editor, font_css);
         tab = g_list_next (tab);
     }
 }
@@ -814,8 +831,9 @@ G_MODULE_EXPORT
 void on_styleschemes_treeview_cursor_changed (GtkTreeView* treeview, void* user) {
     gchar* id = NULL;
     gchar* name = NULL;
-    GList* tab = gummi->tabmanager->tabs;
+    GList* tab;
     GtkTreeIter iter;
+
     GtkTreeModel* model = GTK_TREE_MODEL (gtk_tree_view_get_model (treeview));
     GtkTreeSelection* selection = gtk_tree_view_get_selection (treeview);
 

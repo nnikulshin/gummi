@@ -141,9 +141,7 @@ static gboolean remove_page_rendering (GuPreviewGui* pc, gint page);
 
 // Functions for syncronizing editor and preview via SyncTeX
 static gboolean synctex_run_parser (GuPreviewGui* pc, GtkTextIter *sync_to, gchar* tex_file);
-#if HAVE_POPPLER_PAGE_GET_SELECTED_TEXT
 static void synctex_filter_results (GuPreviewGui* pc, GtkTextIter *sync_to);
-#endif
 static void synctex_scroll_to_node (GuPreviewGui* pc, SyncNode* node);
 static SyncNode* synctex_one_node_found (GuPreviewGui* pc);
 static void synctex_merge_nodes (GuPreviewGui* pc);
@@ -172,7 +170,10 @@ GuPreviewGui* previewgui_init (GtkBuilder * builder) {
     p->toolbar = GTK_WIDGET (gtk_builder_get_object (builder, "preview_toolbar"));
 
     p->combo_sizes =
-        GTK_COMBO_BOX (gtk_builder_get_object (builder, "combo_sizes"));
+        GTK_COMBO_BOX  (gtk_builder_get_object (builder, "combo_preview_size"));
+    p->model_sizes =
+        GTK_TREE_MODEL (gtk_builder_get_object (builder, "model_preview_size"));
+
     p->page_next = GTK_WIDGET (gtk_builder_get_object (builder, "page_next"));
     p->page_prev = GTK_WIDGET (gtk_builder_get_object (builder, "page_prev"));
     p->page_label = GTK_WIDGET (gtk_builder_get_object (builder, "page_label"));
@@ -547,8 +548,11 @@ gboolean on_document_compiled (gpointer data) {
             previewgui_start_errormode (pc, "compile_error");
         } else {
             if (!pc->uri) {
-
-                gchar* uri = g_filename_to_uri (editor->pdffile, NULL, NULL);
+                // NOTE: g_filename_{to|from}_uri functions (correctly)
+                // encode special characters like space with % + hexvalue
+                // but we don't do that elsewhere so use custom concat for now
+                gchar* uri = g_strconcat ("file://", editor->pdffile, NULL);
+                //gchar* uri = g_filename_to_uri (editor->pdffile, NULL, NULL);
 
                 previewgui_set_pdffile (pc, uri);
                 g_free(uri);
@@ -928,7 +932,7 @@ static void load_document(GuPreviewGui* pc, gboolean update) {
 void previewgui_set_pdffile (GuPreviewGui* pc, const gchar *uri) {
     //L_F_DEBUG;
     GError *error = NULL;
-    
+
     previewgui_cleanup_fds (pc);
 
     pc->uri = g_strdup(uri);
@@ -949,30 +953,47 @@ void previewgui_set_pdffile (GuPreviewGui* pc, const gchar *uri) {
 
     // Restore scale and fit mode
     if (!g_active_tab->fit_mode) {
-        const gchar* conf_zoom = config_get_string ("Preview", "zoom_mode");
-        gint new_fit, new_zoom;
 
-        // TODO: build a dict like structure combining zoom fit strs with
-        // id (combo) so we don't have to do this verbose stuff all over the place
-        if (STR_EQU (conf_zoom, "Best Fit")) new_fit = 0, new_zoom = 0;
-        else
-        if (STR_EQU (conf_zoom, "Fit Page Width")) new_fit = 1, new_zoom = 1;
-        else {
-            new_fit = 2;
-            if (STR_EQU (conf_zoom, "50%")) new_zoom = 2;
-            else if (STR_EQU (conf_zoom, "70%")) new_zoom = 3;
-            else if (STR_EQU (conf_zoom, "85%")) new_zoom = 4;
-            else if (STR_EQU (conf_zoom, "100%")) new_zoom = 5;
-            else if (STR_EQU (conf_zoom, "125%")) new_zoom = 6;
-            else if (STR_EQU (conf_zoom, "150%")) new_zoom = 7;
-            else if (STR_EQU (conf_zoom, "200%")) new_zoom = 8;
-            else if (STR_EQU (conf_zoom, "300%")) new_zoom = 9;
-            else if (STR_EQU (conf_zoom, "400%")) new_zoom = 10;
-            else slog (L_ERROR, "should not happen\n");
+        const gchar* conf_zoom = config_get_string ("Preview", "zoom_mode");
+
+        GtkTreeIter iter;
+        gboolean    iter_next;
+        gint        iter_count = 0;
+
+        iter_next = gtk_tree_model_get_iter_first (pc->model_sizes, &iter);
+
+        while (iter_next) {
+            gchar *str_data;
+            gtk_tree_model_get (pc->model_sizes, &iter, 0, &str_data, -1);
+
+            // match zoom/fit mode from configfile with mapping from glade:
+            if (STR_EQU (conf_zoom, str_data)) {
+
+                // set zoom_mode
+                g_active_tab->zoom_mode = iter_count;
+
+                // set fit_mode
+                switch (iter_count) {
+                    case FIT_BOTH:
+                        g_active_tab->fit_mode = FIT_BOTH;
+                        break;
+                    case FIT_WIDTH:
+                        g_active_tab->fit_mode = FIT_WIDTH;
+                        break;
+                    default:
+                        g_active_tab->fit_mode = FIT_NUMERIC;
+                        break;
+                }
+                g_free (str_data);
+                break;
+            }
+
+            iter_next   = gtk_tree_model_iter_next (pc->model_sizes, &iter);
+            iter_count += 1;
         }
-        g_active_tab->fit_mode = new_fit;
-        g_active_tab->zoom_mode = new_zoom;
     }
+
+    // TODO: further cleanup above and below please!
 
     g_signal_handler_block(pc->combo_sizes, pc->combo_sizes_changed_handler);
 
@@ -1031,24 +1052,23 @@ void previewgui_refresh (GuPreviewGui* pc, GtkTextIter *sync_to, gchar* tex_file
         synctex_run_parser(pc, sync_to, tex_file)) {
 
         SyncNode *node;
-        if ((node = synctex_one_node_found(pc)) == NULL) {
-            // See if the nodes are so close they all fit in the window
-            // in that case we just merge them
+        if (synctex_one_node_found(pc) == NULL) {
+            // See if the nodes are so close they all fit in
+            // the window - in that case we just merge them
             synctex_merge_nodes(pc);
         }
 
-#if HAVE_POPPLER_PAGE_GET_SELECTED_TEXT
-        if ((node = synctex_one_node_found(pc)) == NULL) {
+        if (synctex_one_node_found(pc) == NULL) {
             // Search for words in the pdf
             synctex_filter_results(pc, sync_to);
         }
-        // Here we could try merging again - but only with nodes which
-        // contained the searched text
-#endif
 
-        // If we have only one node left/selected, scroll ot it.
+        // Here we could try merging again - but only with
+        // nodes which contained the searched text
+
+        // If we have only one node left/selected, scroll to it.
         if ((node = synctex_one_node_found(pc)) != NULL) {
-           synctex_scroll_to_node(pc, node);
+            synctex_scroll_to_node(pc, node);
         }
 
     } else {
@@ -1108,7 +1128,6 @@ static gboolean synctex_run_parser(GuPreviewGui* pc, GtkTextIter *sync_to, gchar
     return TRUE;
 }
 
-#if HAVE_POPPLER_PAGE_GET_SELECTED_TEXT
 static void synctex_filter_results(GuPreviewGui* pc, GtkTextIter *sync_to) {
 
     // First look if we even have to filter...
@@ -1167,8 +1186,6 @@ static void synctex_filter_results(GuPreviewGui* pc, GtkTextIter *sync_to) {
         g_free(word);
     }
 }
-#endif
-
 
 static SyncNode* synctex_one_node_found(GuPreviewGui* pc) {
 
@@ -1455,7 +1472,7 @@ void previewgui_scroll_to_xy (GuPreviewGui* pc, gdouble x, gdouble y) {
 
 void previewgui_save_position (GuPreviewGui* pc) {
     //L_F_DEBUG;
-    if (g_active_tab != NULL) {
+    if (g_active_tab != NULL && !pc->errormode) {
         g_active_tab->scroll_x = gtk_adjustment_get_value (pc->hadj);
         g_active_tab->scroll_y = gtk_adjustment_get_value (pc->vadj);
         block_handlers_current_page(pc);

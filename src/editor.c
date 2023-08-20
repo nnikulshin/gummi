@@ -193,7 +193,7 @@ void editor_fileinfo_update (GuEditor* ec, const gchar* filename) {
 
     // directory should exist, but if not create ~/.cache/gummi:
     if (!g_file_test (C_TMPDIR, G_FILE_TEST_IS_DIR)) {
-            slog (L_WARNING, ".cache directory does not exist, creating..\n");
+            slog (L_WARNING, "gummi cache directory does not exist, creating..\n");
             g_mkdir_with_parents (C_TMPDIR, DIR_PERMS);
     }
 
@@ -316,7 +316,7 @@ void editor_sourceview_config (GuEditor* ec) {
     const gchar* style_scheme = config_get_string ("Editor", "style_scheme");
     editor_set_style_scheme_by_id (ec, style_scheme);
 
-    editor_set_font (ec, config_get_string ("Editor", "font"));
+    editor_set_font (ec, config_get_string ("Editor", "font_css"));
 
     gtk_source_view_set_show_line_numbers (
                             GTK_SOURCE_VIEW (ec->view),
@@ -727,15 +727,8 @@ void editor_redo_change (GuEditor* ec) {
     }
 }
 
-void editor_set_font (GuEditor* ec, const gchar* font) {
-    // surely there has to be a better solution to transform
-    // a string like 'Monospace 12' into css syntax right..?
-    gchar** font_elems = g_strsplit (font, " ", BUFSIZ);
-    gchar* style = g_strdup_printf ("* { font: %spx '%s'; }",
-                                    font_elems[1], font_elems[0]);
-
-    gtk_css_provider_load_from_data (ec->css, style, -1, NULL);
-    g_free (style);
+void editor_set_font (GuEditor* ec, const gchar* font_css) {
+    gtk_css_provider_load_from_data (ec->css, font_css, -1, NULL);
 }
 
 

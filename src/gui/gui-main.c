@@ -107,7 +107,9 @@ GummiGui* gui_init (GtkBuilder* builder) {
     g->menu_toolbar =
         GTK_CHECK_MENU_ITEM (gtk_builder_get_object (builder, "menu_toolbar"));
     g->menu_statusbar =
-        GTK_CHECK_MENU_ITEM(gtk_builder_get_object (builder, "menu_statusbar"));
+        GTK_CHECK_MENU_ITEM (gtk_builder_get_object (builder, "menu_statusbar"));
+    g->menu_rightpane =
+        GTK_CHECK_MENU_ITEM (gtk_builder_get_object (builder, "menu_rightpane"));
     g->statusid =
         gtk_statusbar_get_context_id (GTK_STATUSBAR (g->statusbar), "Gummi");
     g->recent[0] =
@@ -226,6 +228,14 @@ GummiGui* gui_init (GtkBuilder* builder) {
         gtk_widget_hide (GTK_WIDGET (g->statusbar));
     }
 
+    if (config_get_boolean ("Interface", "rightpane")) {
+        gtk_check_menu_item_set_active (g->menu_rightpane, TRUE);
+        gtk_widget_show (GTK_WIDGET (g->rightpane));
+    } else {
+        gtk_check_menu_item_set_active (g->menu_rightpane, FALSE);
+        gtk_widget_hide (GTK_WIDGET (g->rightpane));
+    }
+
     g->menu_autosync =
         GTK_CHECK_MENU_ITEM (gtk_builder_get_object (builder, "menu_autosync"));
 
@@ -247,6 +257,11 @@ GummiGui* gui_init (GtkBuilder* builder) {
 }
 
 void gui_main (GtkBuilder* builder) {
+    #ifdef WIN32
+    // force win32 builds to use a native looking theme
+    g_object_set (gtk_settings_get_default(), "gtk-theme-name", "win32", NULL);
+    #endif
+
     gtk_builder_connect_signals (builder, NULL);
     gtk_widget_show_all (GTK_WIDGET (gui->mainwindow));
 
@@ -553,7 +568,8 @@ void on_template_rowitem_edited (GtkWidget* widget, gchar *path, gchar* filenm,
 
 G_MODULE_EXPORT
 void on_template_cursor_changed (GtkTreeView *tree, gpointer data) {
-    if (!gtk_tree_view_get_selection (tree) == 0) {
+
+	if (gtk_tree_view_get_selection (tree)) {
         gtk_widget_set_sensitive (gummi->templ->template_open, TRUE);
     }
 }

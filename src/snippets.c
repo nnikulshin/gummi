@@ -196,23 +196,23 @@ gchar* snippets_get_value (GuSnippets* sc, const gchar* term) {
 }
 
 void snippets_set_accelerator (GuSnippets* sc, gchar* config) {
-    /* config has the form: Key,Accel_key,Name */
+    // config has the form: Key,Accel_key,Name
     GClosure* closure = NULL;
     GdkModifierType mod;
     guint keyval = 0;
     gchar** configs = g_strsplit (config, ",", 0);
-    Tuple2* data = g_new0 (Tuple2, 1);
-    Tuple2* closure_data = g_new0 (Tuple2, 1);
 
-    /* Return if config does not contains accelerator */
+    // return if configs does not contain accelerator
     if (strlen (configs[1]) == 0) {
         g_strfreev (configs);
         return;
     }
 
+    Tuple2* data = g_new0 (Tuple2, 1);
+    Tuple2* closure_data = g_new0 (Tuple2, 1);
+
     data->first = (gpointer)sc;
     data->second = (gpointer)g_strdup (configs[0]);
-
 
     closure = g_cclosure_new (G_CALLBACK (snippets_accel_cb), data, NULL);
     closure_data->first = (gpointer)data->second;
@@ -221,7 +221,7 @@ void snippets_set_accelerator (GuSnippets* sc, gchar* config) {
     sc->closure_data = g_list_append (sc->closure_data, closure_data);
     gtk_accelerator_parse (configs[1], &keyval, &mod);
 
-    /* Return without connect if accel is not valid */
+    // return without connect if accel is not valid
     if (!gtk_accelerator_valid (keyval, mod)) return;
 
     snippets_accel_connect (sc, keyval, mod, closure);
@@ -410,7 +410,7 @@ void snippets_accel_connect (GuSnippets* sc, guint keyval, GdkModifierType mod,
 
     acc = gtk_accelerator_get_label (keyval,
             gtk_accelerator_get_default_mod_mask () & mod);
-    slog (L_DEBUG, "Accelerator `%s' connected\n", acc);
+    slog (L_DEBUG, "Accelerator '%s' connected\n", acc);
     g_free (acc);
 }
 
@@ -430,9 +430,9 @@ void snippets_accel_disconnect (GuSnippets* sc, const gchar* key) {
     if (current) {
         gtk_accel_group_disconnect (sc->accel_group, closure_data->second);
         sc->closure_data = g_list_remove (sc->closure_data, closure_data);
-        g_free (closure_data);
-        slog (L_DEBUG, "Accelerator for `%s' disconnected\n",
+        slog (L_DEBUG, "Accelerator for '%s' disconnected\n",
                 closure_data->first);
+        g_free (closure_data);
     }
 }
 
@@ -561,7 +561,7 @@ void snippet_info_initial_expand (GuSnippetInfo* info, GuEditor* ec) {
     GHashTable* map = NULL;
     GList* current = NULL;
     gchar* text = NULL;
-    gint key = 0;
+    glong key = 0;
 
     map = g_hash_table_new (NULL, NULL);
     current = g_list_first (info->einfo);

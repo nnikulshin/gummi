@@ -179,6 +179,8 @@ gboolean on_menu_quit_activate (void) {
     gint length = g_list_length (gummi->tabmanager->tabs);
     int i = 0;
 
+    motion_pause_compile_thread (gummi->motion);
+
     for(i = 0; i < length; i++){
         gtk_notebook_set_current_page(gui->tabmanagergui->notebook, i);
         tabmanager_set_active_tab (i);
@@ -317,6 +319,19 @@ void on_menu_toolbar_toggled (GtkWidget *widget, void *user) {
     } else {
         gtk_widget_hide (gui->toolbar);
         config_set_boolean ("Interface", "toolbar", FALSE);
+    }
+}
+
+G_MODULE_EXPORT
+void on_menu_rightpane_toggled (GtkWidget *widget, void *user) {
+    if (gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM (widget))) {
+        gtk_widget_show (GTK_WIDGET (gui->rightpane));
+        config_set_boolean ("Interface", "rightpane", TRUE);
+        gtk_toggle_tool_button_set_active (gui->previewgui->preview_pause, FALSE);
+    } else {
+        gtk_widget_hide (GTK_WIDGET (gui->rightpane));
+        config_set_boolean ("Interface", "rightpane", FALSE);
+        gtk_toggle_tool_button_set_active (gui->previewgui->preview_pause, TRUE);
     }
 }
 

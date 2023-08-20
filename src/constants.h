@@ -35,7 +35,7 @@
 // Gummi defs:
 #define C_PACKAGE "gummi"
 #define C_PACKAGE_NAME "Gummi"
-#define C_PACKAGE_VERSION "0.8.1"
+#define C_PACKAGE_VERSION "0.8.3"
 #define C_PACKAGE_COMMENTS "Simple LaTeX Editor for GTK+"
 #define C_PACKAGE_COPYRIGHT "Copyright \xc2\xa9 2009\n\n"\
                             "Alexander van der Meij\n"\
@@ -94,7 +94,7 @@
 "Arabic: Hamad Mohammad\n" \
 "Brazilian-Portugese: Fernando Cruz, Alexandre Guimarães\n" \
 "Catalan: Marc Vinyals\n" \
-"Chinese (Simplified): Mathlab pass\n" \
+"Chinese (Simplified): Mathlab pass, yjwork-cn\n" \
 "Chinese (Traditional): Wei-Ning Huang\n" \
 "Czech: Přemysl Janouch\n" \
 "Danish: Jack Olsen\n" \
@@ -103,6 +103,7 @@
 "German: Thomas Niederprüm\n" \
 "Greek: Dimitris Leventeas\n" \
 "Hungarian: Balázs Meskó\n" \
+"Interlingue: OIS\n" \
 "Italian: Salvatore Vassallo\n" \
 "Polish: Hubert Kowalski\n" \
 "Portugese: Alexandre Guimarães\n" \
