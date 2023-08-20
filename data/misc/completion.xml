@@ -752,6 +752,10 @@ Example:
 	<command name="fill" />
 
 	<command name="hrulefill" />
+	
+	<command name="quad" />
+	
+	<command name="qquad" />
 
 	<!-- letter class -->
 
@@ -783,6 +787,12 @@ Example:
 
 	<command name="date">
 		<argument label="Date" />
+	</command>
+
+	<command name="formatdate" package="datetime">
+		<argument label="Day" />
+		<argument label="Month" />
+		<argument label="Year" />
 	</command>
 
 	<command name="and" />
@@ -852,14 +862,6 @@ Example:
 		<argument label="Description" />
 	</command>
 
-	<command name="frametitle" package="beamer">
-		<argument label="Title" />
-	</command>
-
-	<command name="framesubtitle" package="beamer">
-		<argument label="SubTitle" />
-	</command>
-
 	<command name="documentclass">
 		<argument label="StyleOptions" type="optional" />
 		<argument label="DocumentClass">
@@ -882,6 +884,9 @@ Example:
 			<choice name="align" package="amsmath" />
 			<choice name="align*" package="amsmath" />
 			<choice name="aligned" package="amsmath" />
+			<choice name="alignat" package="amsmath" />
+			<choice name="alignat*" package="amsmath" />
+			<choice name="alignedat" package="amsmath" />
 			<choice name="appendix" />
 			<choice name="array" />
 			<choice name="block" />
@@ -1072,6 +1077,24 @@ Example:
 
 	<command name="cite">
 		<!--<argument label="Specification" type="optional" />-->
+		<argument label="Key">
+			<placeholder key="Bibitems" />
+		</argument>
+	</command>
+	
+	<command name="citet">
+		<argument label="Key">
+			<placeholder key="Bibitems" />
+		</argument>
+	</command>
+	
+	<command name="citep">
+		<argument label="Key">
+			<placeholder key="Bibitems" />
+		</argument>
+	</command>
+	
+	<command name="onlinecite">
 		<argument label="Key">
 			<placeholder key="Bibitems" />
 		</argument>
@@ -1483,6 +1506,21 @@ Example:
 		<argument label="Over" />
 		<argument label="Formula" />
 	</command>
+
+	<!-- beamer -->
+	<command name="frametitle" package="beamer">
+		<argument label="Title" />
+	</command>
+
+	<command name="framesubtitle" package="beamer">
+		<argument label="SubTitle" />
+	</command>
+
+	<command name="usetheme" package="beamer">
+		<argument label="Theme" />
+	</command>
+
+	<command name="titlepage" package="beamer" />
 
 	<!-- picture environment -->
 
