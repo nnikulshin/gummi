@@ -50,6 +50,7 @@ void iofunctions_real_load_file (GObject* hook, const gchar* filename);
 void iofunctions_real_save_file (GObject* hook, GObject* savecontext);
 gchar* iofunctions_decode_text (gchar* text);
 gchar* iofunctions_encode_text (gchar* text);
+void scan_directory (const gchar* dirname);
 
 GuIOFunc* iofunctions_init (void) {
     GuIOFunc* io = g_new0(GuIOFunc, 1);

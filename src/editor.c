@@ -93,7 +93,7 @@ GuEditor* editor_new (GuMotion* mc) {
     gtk_style_context_add_provider(context,
                                    GTK_STYLE_PROVIDER(ec->css),
                                    GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    gtk_source_completion_add_provider(ec->autocomplete, ec->comp_provider, NULL);
+    gtk_source_completion_add_provider(ec->autocomplete, (GtkSourceCompletionProvider*)ec->comp_provider, NULL);
 
     gtk_source_view_set_tab_width
         (ec->view, config_get_integer ("Editor", "tabwidth"));
